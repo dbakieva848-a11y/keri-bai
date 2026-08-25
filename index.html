@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="kk" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3-2-1 Кері байланыс тақтасы</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- QRCode JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                        },
+                        sticky: {
+                            yellow: '#fef9c3',
+                            pink: '#fce7f3',
+                            green: '#dcfce7',
+                            blue: '#e0f2fe',
+                            purple: '#f3e8ff',
+                        }
+                    },
+                    boxShadow: {
+                        'sticky': '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                        'sticky-hover': '0 20px 25px -5px rgba(0, 0, 0, 0.12), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        /* Custom Sticky Note Effect */
+        .sticky-card {
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+        }
+        .sticky-card:hover {
+            transform: translateY(-6px) rotate(0deg) !important;
+            z-index: 20;
+        }
+
+        /* Subtle random rotations for realistic physical board feel */
+        .rot-1 { transform: rotate(-1.5deg); }
+        .rot-2 { transform: rotate(1deg); }
+        .rot-3 { transform: rotate(-2deg); }
+        .rot-4 { transform: rotate(2deg); }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        .pin-shadow {
+            filter: drop-shadow(0px 3px 2px rgba(0,0,0,0.3));
+        }
+    </style>
+</head>
+<body class="h-full text-slate-800 flex flex-col antialiased bg-slate-50 selection:bg-sky-200">
+
+    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand Title -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white flex items-center justify-center shadow-md">
+                        <i class="fa-solid fa-note-sticky text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight text-slate-900 flex items-center gap-2">
+                            «3-2-1» Кері Байланыс
+                            <span class="text-xs font-semibold px-2 py-0.5 bg-sky-100 text-sky-700 rounded-full border border-sky-200">Семинар & Интерактив</span>
+                        </h1>
+                        <p class="text-xs text-slate-500 hidden sm:block">Мұғалімдердің рефлексиясы мен ұсыныстарына арналған цифрлық платформа</p>
+                    </div>
+                </div>
+
+                <!-- Right Actions & Navigation Tabs -->
+                <div class="flex items-center space-x-2">
+                    <button id="qrBtn" onclick="openQRModal()" class="px-3 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all flex items-center gap-1.5 border border-slate-200">
+                        <i class="fa-solid fa-qrcode text-sky-600"></i>
+                        <span class="hidden md:inline">QR Код</span>
+                    </button>
+
+                    <button onclick="openTemplateModal()" class="px-3 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all flex items-center gap-1.5 border border-slate-200">
+                        <i class="fa-solid fa-lightbulb text-amber-500"></i>
+                        <span class="hidden md:inline">Үлгілер</span>
+                    </button>
+
+                    <button onclick="exportData()" class="px-3 py-2 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-export text-emerald-600"></i>
+                        <span class="hidden lg:inline">Экспорт</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="bg-white border-b border-slate-200 py-2.5 px-4 sticky top-16 z-20 shadow-xs">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-sm">
+                <button id="tabBtnForm" onclick="switchTab('form')" class="px-4 py-1.5 rounded-lg font-semibold text-xs sm:text-sm transition-all bg-white text-sky-700 shadow-xs flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Кері байланыс жіберу</span>
+                </button>
+                <button id="tabBtnBoard" onclick="switchTab('board')" class="px-4 py-1.5 rounded-lg font-semibold text-xs sm:text-sm transition-all text-slate-600 hover:text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-border-all"></i>
+                    <span>Интерактивті тақта</span>
+                    <span id="badgeCount" class="ml-1 px-1.5 py-0.2 bg-sky-500 text-white text-[10px] rounded-full font-bold">0</span>
+                </button>
+                <button id="tabBtnAnalytics" onclick="switchTab('analytics')" class="px-4 py-1.5 rounded-lg font-semibold text-xs sm:text-sm transition-all text-slate-600 hover:text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Аналитика</span>
+                </button>
+            </div>
+
+            <!-- Board Stats Overview (Quick stats) -->
+            <div class="hidden md:flex items-center gap-4 text-xs text-slate-500">
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span>
+                    <span>3 Білгені</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span>
+                    <span>2 Қолданатыны</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span>
+                    <span>1 Сұрағы</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <!-- SECTION 1: FEEDBACK SUBMISSION FORM -->
+        <section id="viewForm" class="max-w-3xl mx-auto space-y-6">
+            <!-- Hero banner card -->
+            <div class="bg-gradient-to-r from-sky-600 via-indigo-600 to-purple-600 rounded-2xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-2xl"></div>
+                <div class="relative z-10">
+                    <span class="px-3 py-1 bg-white/20 backdrop-blur-md text-white text-xs font-semibold rounded-full uppercase tracking-wider">Семинар Рефлексиясы</span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold mt-3">«3-2-1» Кері Байланыс Қалдыру</h2>
+                    <p class="text-sky-100 text-sm mt-2 max-w-xl">
+                        Семинардан алған әсеріңізді, білген жаңа нәрселеріңізді және көкейіңізде жүрген сұрақты цифрлық стикерге жазып қалдырыңыз.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Interactive Form Card -->
+            <form id="feedbackForm" onsubmit="handleFormSubmit(event)" class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
+                <!-- User Info Row -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                            <i class="fa-solid fa-user text-sky-500 mr-1"></i> Мұғалімнің аты-жөні (немесе Аноним):
+                        </label>
+                        <input type="text" id="authorName" placeholder="Мысалы: Айнұр Серікқызы" 
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                            <i class="fa-solid fa-layer-group text-sky-500 mr-1"></i> Семинар / Тақырып бағыты:
+                        </label>
+                        <select id="category" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition text-sm bg-white">
+                            <option value="Сандық құралдар & IT">Сандық құралдар & IT</option>
+                            <option value="Белсенді оқыту әдістері">Белсенді оқыту әдістері</option>
+                            <option value="Критериалды бағалау">Критериалды бағалау</option>
+                            <option value="Инклюзивті білім беру">Инклюзивті білім беру</option>
+                            <option value="Педагогикалық психология">Педагогикалық психология</option>
+                            <option value="Жалпы семинар">Жалпы семинар</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="p-5 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-3">
+                    <div class="flex items-center gap-2 text-amber-900 font-bold text-sm">
+                        <span class="w-7 h-7 rounded-lg bg-amber-400 text-white flex items-center justify-center font-extrabold text-sm shadow-xs">3</span>
+                        <span>Бүгінгі семинардан білген 3 жаңа нәрсем:</span>
+                    </div>
+                    <div class="space-y-2 pl-2 sm:pl-9">
+                        <div class="relative">
+                            <span class="absolute left-3 top-2.5 text-xs text-amber-600 font-bold">1.</span>
+                            <input type="text" id="learned1" required placeholder="Бірінші жаңа нәрсе..." 
+                                   class="w-full pl-8 pr-4 py-2 text-sm rounded-xl border border-amber-200 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none transition bg-white/80">
+                        </div>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2.5 text-xs text-amber-600 font-bold">2.</span>
+                            <input type="text" id="learned2" required placeholder="Екінші жаңа нәрсе..." 
+                                   class="w-full pl-8 pr-4 py-2 text-sm rounded-xl border border-amber-200 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none transition bg-white/80">
+                        </div>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2.5 text-xs text-amber-600 font-bold">3.</span>
+                            <input type="text" id="learned3" required placeholder="Үшінші жаңа нәрсе..." 
+                                   class="w-full pl-8 pr-4 py-2 text-sm rounded-xl border border-amber-200 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none transition bg-white/80">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 space-y-3">
+                    <div class="flex items-center gap-2 text-emerald-900 font-bold text-sm">
+                        <span class="w-7 h-7 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-extrabold text-sm shadow-xs">2</span>
+                        <span>Сабағымда қолданатын 2 құралым / әдісім:</span>
+                    </div>
+                    <div class="space-y-2 pl-2 sm:pl-9">
+                        <div class="relative">
+                            <span class="absolute left-3 top-2.5 text-xs text-emerald-600 font-bold">1.</span>
+                            <input type="text" id="tool1" required placeholder="Бірінші қолданатын құрал немесе әдіс..." 
+                                   class="w-full pl-8 pr-4 py-2 text-sm rounded-xl border border-emerald-200 focus:bg-white focus:ring-2 focus:ring-emerald-400 outline-none transition bg-white/80">
+                        </div>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2.5 text-xs text-emerald-600 font-bold">2.</span>
+                            <input type="text" id="tool2" required placeholder="Екінші қолданатын құрал немесе әдіс..." 
+                                   class="w-full pl-8 pr-4 py-2 text-sm rounded-xl border border-emerald-200 focus:bg-white focus:ring-2 focus:ring-emerald-400 outline-none transition bg-white/80">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-5 rounded-2xl bg-sky-50/70 border border-sky-200/80 space-y-3">
+                    <div class="flex items-center gap-2 text-sky-900 font-bold text-sm">
+                        <span class="w-7 h-7 rounded-lg bg-sky-500 text-white flex items-center justify-center font-extrabold text-sm shadow-xs">1</span>
+                        <span>Көкейімде қалған 1 сұрағым:</span>
+                    </div>
+                    <div class="pl-2 sm:pl-9">
+                        <textarea id="question" rows="2" required placeholder="Көкейіңізде жүрген сұрақ немесе ұсыныс..." 
+                                  class="w-full p-3 text-sm rounded-xl border border-sky-200 focus:bg-white focus:ring-2 focus:ring-sky-400 outline-none transition bg-white/80 resize-none"></textarea>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                        <i class="fa-solid fa-palette text-purple-500 mr-1"></i> Стикердің түсін таңдаңыз:
+                    </label>
+                    <div class="flex items-center gap-3">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="noteColor" value="yellow" checked class="peer sr-only">
+                            <div class="w-9 h-9 rounded-xl bg-amber-100 border-2 border-amber-300 peer-checked:ring-4 peer-checked:ring-amber-400 flex items-center justify-center transition-all">
+                                <i class="fa-solid fa-check text-amber-700 text-xs opacity-0 peer-checked:opacity-100"></i>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="noteColor" value="pink" class="peer sr-only">
+                            <div class="w-9 h-9 rounded-xl bg-pink-100 border-2 border-pink-300 peer-checked:ring-4 peer-checked:ring-pink-400 flex items-center justify-center transition-all">
+                                <i class="fa-solid fa-check text-pink-700 text-xs opacity-0 peer-checked:opacity-100"></i>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="noteColor" value="green" class="peer sr-only">
+                            <div class="w-9 h-9 rounded-xl bg-emerald-100 border-2 border-emerald-300 peer-checked:ring-4 peer-checked:ring-emerald-400 flex items-center justify-center transition-all">
+                                <i class="fa-solid fa-check text-emerald-700 text-xs opacity-0 peer-checked:opacity-100"></i>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="noteColor" value="blue" class="peer sr-only">
+                            <div class="w-9 h-9 rounded-xl bg-sky-100 border-2 border-sky-300 peer-checked:ring-4 peer-checked:ring-sky-400 flex items-center justify-center transition-all">
+                                <i class="fa-solid fa-check text-sky-700 text-xs opacity-0 peer-checked:opacity-100"></i>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="noteColor" value="purple" class="peer sr-only">
+                            <div class="w-9 h-9 rounded-xl bg-purple-100 border-2 border-purple-300 peer-checked:ring-4 peer-checked:ring-purple-400 flex items-center justify-center transition-all">
+                                <i class="fa-solid fa-check text-purple-700 text-xs opacity-0 peer-checked:opacity-100"></i>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="pt-2 flex items-center gap-3">
+                    <button type="submit" class="flex-1 py-3.5 px-6 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>Стикерді Тақтаға Жабыстыру</span>
+                    </button>
+                    <button type="button" onclick="fillFormWithExample()" class="py-3.5 px-4 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i>
+                        <span>Үлгімен толтыру</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <section id="viewBoard" class="hidden space-y-6">
+            <!-- Board Controls Toolbar -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4">
+                <div class="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
+                    <!-- Search -->
+                    <div class="relative flex-1 min-w-[200px]">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
+                        <input type="text" id="boardSearch" oninput="renderBoard()" placeholder="Стикерлерден іздеу..." 
+                               class="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                    <!-- Category Filter -->
+                    <select id="boardFilterCategory" onchange="renderBoard()" class="px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <option value="ALL">Барлық санаттар</option>
+                        <option value="Сандық құралдар & IT">Сандық құралдар & IT</option>
+                        <option value="Белсенді оқыту әдістері">Белсенді оқыту әдістері</option>
+                        <option value="Критериалды бағалау">Критериалды бағалау</option>
+                        <option value="Инклюзивті білім беру">Инклюзивті білім беру</option>
+                        <option value="Педагогикалық психология">Педагогикалық психология</option>
+                        <option value="Жалпы семинар">Жалпы семинар</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="clearAllData()" class="px-3 py-2 text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition border border-rose-200 flex items-center gap-1">
+                        <i class="fa-solid fa-trash-can"></i>
+                        <span>Тазалау</span>
+                    </button>
+                    <button onclick="loadSampleData()" class="px-3 py-2 text-xs font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-xl transition border border-sky-200 flex items-center gap-1">
+                        <i class="fa-solid fa-rotate text-sky-600"></i>
+                        <span>Тесттік деректер жүктеу</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Virtual Sticky Board Grid -->
+            <div id="stickyGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+                <!-- Dynamically rendered sticky notes -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyBoardState" class="hidden text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300">
+                <div class="w-16 h-16 mx-auto bg-sky-50 rounded-full flex items-center justify-center text-sky-500 mb-3 text-2xl">
+                    <i class="fa-regular fa-note-sticky"></i>
+                </div>
+                <h3 class="text-base font-bold text-slate-800">Әлі ешқандай стикер қалдырылмады</h3>
+                <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">Семинар қатысушылары кері байланыс жіберген кезде стикерлер осы интерактивті тақтада пайда болады.</p>
+                <button onclick="switchTab('form')" class="px-4 py-2 bg-sky-600 text-white rounded-xl text-xs font-bold hover:bg-sky-700 transition">
+                    Алғашқы стикерді қос
+                </button>
+            </div>
+        </section>
+
+        <section id="viewAnalytics" class="hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Барлық стикерлер</p>
+                        <p id="statTotalCount" class="text-3xl font-extrabold text-slate-800 mt-1">0</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-comments"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Жинақталған сұрақтар</p>
+                        <p id="statQuestionCount" class="text-3xl font-extrabold text-indigo-600 mt-1">0</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-circle-question"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Белсенді мұғалімдер</p>
+                        <p id="statAuthorsCount" class="text-3xl font-extrabold text-emerald-600 mt-1">0</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Detailed Cards -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Top Tools Mentioned -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                    <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-toolbox text-emerald-500"></i>
+                        <span>Ең көп таңдалған құралдар мен әдістер</span>
+                    </h3>
+                    <div id="analyticsToolsList" class="space-y-3">
+                        <!-- Rendered via JS -->
+                    </div>
+                </div>
+
+                <!-- Top Questions list -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                    <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-lightbulb text-amber-500"></i>
+                        <span>Қатысушылар қойған негізгі сұрақтар</span>
+                    </h3>
+                    <div id="analyticsQuestionsList" class="space-y-3 max-h-80 overflow-y-auto pr-1">
+                        <!-- Rendered via JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Template Modal -->
+    <div id="templateModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col animate-in fade-in zoom-in duration-200">
+            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <h3 class="font-bold text-slate-800 flex items-center gap-2 text-sm">
+                    <i class="fa-solid fa-book-open text-sky-600"></i>
+                    <span>Дайын Кері Байланыс Үлгілері</span>
+                </h3>
+                <button onclick="closeTemplateModal()" class="w-8 h-8 rounded-lg hover:bg-slate-200 text-slate-500 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto space-y-4 text-xs sm:text-sm">
+                <!-- Template 1 -->
+                <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2 hover:border-sky-300 transition">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-sky-700">1-Үлгі: Сандық құралдар семинары</span>
+                        <button onclick="useTemplate(0)" class="px-2.5 py-1 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-semibold">
+                            Қолдану
+                        </button>
+                    </div>
+                    <ul class="text-slate-600 space-y-1 list-disc pl-4 text-xs">
+                        <li><strong>3 білгенім:</strong> Quizizz интерактивті тесті, Mentimeter сауалнамасы, AI көмекшілер.</li>
+                        <li><strong>2 қолданатыным:</strong> Padlet кері байланыс тақтасы, Kahoot ойындары.</li>
+                        <li><strong>1 сұрағым:</strong> Интернет төмен сыныптарда сандық құралдарды қалай бейімдеуге болады?</li>
+                    </ul>
+                </div>
+
+                <!-- Template 2 -->
+                <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2 hover:border-sky-300 transition">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-emerald-700">2-Үлгі: Белсенді оқыту әдістері</span>
+                        <button onclick="useTemplate(1)" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold">
+                            Қолдану
+                        </button>
+                    </div>
+                    <ul class="text-slate-600 space-y-1 list-disc pl-4 text-xs">
+                        <li><strong>3 білгенім:</strong> Сыни ойлау сұрақтары, дескриптор құру, топтық рөлдер.</li>
+                        <li><strong>2 қолданатыным:</strong> «Табыс баспалдағы» рефлексиясы, «Джигсо» әдісі.</li>
+                        <li><strong>1 сұрағым:</strong> Пассивті оқушыларды топтық жұмысқа қалай ынталандыруға болады?</li>
+                    </ul>
+                </div>
+
+                <!-- Template 3 -->
+                <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2 hover:border-sky-300 transition">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-purple-700">3-Үлгі: Саралап оқыту & Инклюзия</span>
+                        <button onclick="useTemplate(2)" class="px-2.5 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold">
+                            Қолдану
+                        </button>
+                    </div>
+                    <ul class="text-slate-600 space-y-1 list-disc pl-4 text-xs">
+                        <li><strong>3 білгенім:</strong> Тапсырмаларды деңгейлеп саралау, адаптивті оқу материалдары, жеке қолдау.</li>
+                        <li><strong>2 қолданатыным:</strong> Графикалық органайзерлер, Тайм-менеджмент таймерлері.</li>
+                        <li><strong>1 сұрағым:</strong> Уақытты үнемдеу үшін саралау тапсырмаларын қайда жылдам әзірлеуге болады?</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div id="qrModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-sm">Қатысушыларға арналған QR Код</h3>
+                <button onclick="closeQRModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-500">Қатысушылар телефон камерасымен осы QR кодты сканерлеп, бірден кері байланыс қалдыра алады.</p>
+            
+            <div class="flex justify-center py-2 bg-slate-50 rounded-xl border border-slate-200">
+                <div id="qrcode" class="p-2 bg-white rounded-lg shadow-xs"></div>
+            </div>
+
+            <button onclick="copyCurrentURL()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition flex items-center justify-center gap-2">
+                <i class="fa-regular fa-copy"></i>
+                <span>Сілтемені көшіру</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Storage key
+        const STORAGE_KEY = 'feedback_321_data_v1';
+
+        // Initial preset templates
+        const TEMPLATES = [
+            {
+                name: 'Айнұр Серікқызы',
+                category: 'Сандық құралдар & IT',
+                learned: [
+                    'Quizizz интерактивті тестінің жаңа функционалы',
+                    'Mentimeter арқылы онлайн сауалнама жүргізу',
+                    'Формативті бағалауды автоматтандыру'
+                ],
+                tools: [
+                    'Padlet виртуалды рефлексия тақтасы',
+                    'Kahoot сабақты бекіту ойындары'
+                ],
+                question: 'Сандық құралдарды интернет жылдамдығы төмен мектептерде қалай тиімді қолдануға болады?',
+                color: 'yellow'
+            },
+            {
+                name: 'Ерлан Бақытұлы',
+                category: 'Белсенді оқыту әдістері',
+                learned: [
+                    'Оқушы зейінін шоғырландыратын сергіту сәттері',
+                    'Оқушының сыни ойлауын дамыту сұрақтары',
+                    'Топтық жұмыста рөлдерді тиімді бөлу'
+                ],
+                tools: [
+                    '«Табыс баспалдағы» бағалау парақшасы',
+                    '«Джигсо» (Jigsaw) топтық пікірталас әдісі'
+                ],
+                question: 'Мотивациясы төмен пассивті оқушыларды топтық жұмысқа тартудың ең тиімді қадамы қандай?',
+                color: 'green'
+            },
+            {
+                name: 'Жанар Мұратқызы',
+                category: 'Критериалды бағалау',
+                learned: [
+                    'Дескрипторларды нақты әрі оқушыға түсінікті құру',
+                    'Өз-өзін бағалау rubrics-терін жасау',
+                    'Сараланған кері байланыс беру'
+                ],
+                tools: [
+                    '3-2-1 графикалық органайзері',
+                    'Түсті бағдаршам карточкалары'
+                ],
+                question: 'Формативті бағалауға кететін уақытты қалай тиімді оптимизациялауға болады?',
+                color: 'pink'
+            }
+        ];
+
+        // State
+        let feedbackList = [];
+
+        // Load data on start
+        window.onload = function() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    feedbackList = JSON.parse(saved);
+                } catch(e) {
+                    feedbackList = [...TEMPLATES];
+                }
+            } else {
+                feedbackList = JSON.parse(JSON.stringify(TEMPLATES));
+                saveData();
+            }
+
+            renderBoard();
+            updateAnalytics();
+            initQRCode();
+        };
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(feedbackList));
+            document.getElementById('badgeCount').innerText = feedbackList.length;
+        }
+
+        // Tab Switching Logic
+        function switchTab(tab) {
+            const viewForm = document.getElementById('viewForm');
+            const viewBoard = document.getElementById('viewBoard');
+            const viewAnalytics = document.getElementById('viewAnalytics');
+
+            const btnForm = document.getElementById('tabBtnForm');
+            const btnBoard = document.getElementById('tabBtnBoard');
+            const btnAnalytics = document.getElementById('tabBtnAnalytics');
+
+            // Reset styles
+            [btnForm, btnBoard, btnAnalytics].forEach(btn => {
+                btn.className = "px-4 py-1.5 rounded-lg font-semibold text-xs sm:text-sm transition-all text-slate-600 hover:text-slate-900 flex items-center gap-2";
+            });
+
+            viewForm.classList.add('hidden');
+            viewBoard.classList.add('hidden');
+            viewAnalytics.classList.add('hidden');
+
+            if (tab === 'form') {
+                viewForm.classList.remove('hidden');
+                btnForm.className = "px-4 py-1.5 rounded-lg font-semibold text-xs sm:text-sm transition-all bg-white text-sky-700 shadow-xs flex items-center gap-2";
+            } else if (tab === 'board') {
+                viewBoard.classList.remove('hidden');
+                btnBoard.className = "px-4 py-1.5 rounded-lg font-semibold text-xs sm:text-sm transition-all bg-white text-sky-700 shadow-xs flex items-center gap-2";
+                renderBoard();
+            } else if (tab === 'analytics') {
+                viewAnalytics.classList.remove('hidden');
+                btnAnalytics.className = "px-4 py-1.5 rounded-lg font-semibold text-xs sm:text-sm transition-all bg-white text-sky-700 shadow-xs flex items-center gap-2";
+                updateAnalytics();
+            }
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+
+            const author = document.getElementById('authorName').value.trim() || 'Аноним мұғалім';
+            const category = document.getElementById('category').value;
+            const learned1 = document.getElementById('learned1').value.trim();
+            const learned2 = document.getElementById('learned2').value.trim();
+            const learned3 = document.getElementById('learned3').value.trim();
+            const tool1 = document.getElementById('tool1').value.trim();
+            const tool2 = document.getElementById('tool2').value.trim();
+            const question = document.getElementById('question').value.trim();
+
+            const selectedColor = document.querySelector('input[name="noteColor"]:checked').value;
+
+            const newItem = {
+                id: Date.now(),
+                name: author,
+                category: category,
+                learned: [learned1, learned2, learned3],
+                tools: [tool1, tool2],
+                question: question,
+                color: selectedColor,
+                likes: 0,
+                date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+
+            feedbackList.unshift(newItem);
+            saveData();
+
+            // Trigger celebration animation
+            confetti({
+                particleCount: 60,
+                spread: 70,
+                origin: { y: 0.7 }
+            });
+
+            // Reset form
+            document.getElementById('feedbackForm').reset();
+
+            // Switch to board view
+            switchTab('board');
+        }
+
+        function renderBoard() {
+            const grid = document.getElementById('stickyGrid');
+            const emptyState = document.getElementById('emptyBoardState');
+            const searchTerm = document.getElementById('boardSearch').value.toLowerCase();
+            const categoryFilter = document.getElementById('boardFilterCategory').value;
+
+            grid.innerHTML = '';
+
+            const filtered = feedbackList.filter(item => {
+                const matchesCategory = categoryFilter === 'ALL' || item.category === categoryFilter;
+                const matchesSearch = item.name.toLowerCase().includes(searchTerm) ||
+                                      item.question.toLowerCase().includes(searchTerm) ||
+                                      item.learned.some(l => l.toLowerCase().includes(searchTerm)) ||
+                                      item.tools.some(t => t.toLowerCase().includes(searchTerm));
+                return matchesCategory && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                grid.classList.add('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+                grid.classList.remove('hidden');
+            }
+
+            const colorClasses = {
+                yellow: 'bg-yellow-100/90 border-yellow-200 text-amber-950',
+                pink: 'bg-pink-100/90 border-pink-200 text-pink-950',
+                green: 'bg-emerald-100/90 border-emerald-200 text-emerald-950',
+                blue: 'bg-sky-100/90 border-sky-200 text-sky-950',
+                purple: 'bg-purple-100/90 border-purple-200 text-purple-950'
+            };
+
+            const rotationClasses = ['rot-1', 'rot-2', 'rot-3', 'rot-4'];
+
+            filtered.forEach((item, index) => {
+                const colorClass = colorClasses[item.color] || colorClasses.yellow;
+                const rotationClass = rotationClasses[index % rotationClasses.length];
+
+                const card = document.createElement('div');
+                card.className = `sticky-card p-5 rounded-2xl border shadow-sticky hover:shadow-sticky-hover transition-all duration-200 ${colorClass} ${rotationClass} flex flex-col justify-between space-y-4 relative`;
+
+                card.innerHTML = `
+                    <!-- Push Pin Icon -->
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 pin-shadow text-rose-500 text-lg">
+                        <i class="fa-solid fa-thumbtack"></i>
+                    </div>
+
+                    <div>
+                        <!-- Card Header -->
+                        <div class="flex items-center justify-between border-b border-black/10 pb-2 mb-3">
+                            <span class="font-bold text-xs uppercase tracking-wider opacity-80">${item.category}</span>
+                            <span class="text-[10px] opacity-60 font-semibold">${item.date || ''}</span>
+                        </div>
+
+                        <!-- 3 Learned -->
+                        <div class="mb-3 space-y-1">
+                            <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-800 flex items-center gap-1">
+                                <i class="fa-solid fa-check text-xs"></i> 3 Білгені:
+                            </span>
+                            <ul class="text-xs space-y-1 list-disc pl-4 font-medium opacity-90">
+                                ${item.learned.map(l => `<li>${escapeHtml(l)}</li>`).join('')}
+                            </ul>
+                        </div>
+
+                        <!-- 2 Tools -->
+                        <div class="mb-3 space-y-1">
+                            <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800 flex items-center gap-1">
+                                <i class="fa-solid fa-wrench text-xs"></i> 2 Қолданатыны:
+                            </span>
+                            <ul class="text-xs space-y-1 list-disc pl-4 font-medium opacity-90">
+                                ${item.tools.map(t => `<li>${escapeHtml(t)}</li>`).join('')}
+                            </ul>
+                        </div>
+
+                        <!-- 1 Question -->
+                        <div class="p-2.5 rounded-xl bg-white/60 border border-black/5 space-y-1">
+                            <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-800 flex items-center gap-1">
+                                <i class="fa-solid fa-circle-question text-xs"></i> 1 Сұрағы:
+                            </span>
+                            <p class="text-xs font-semibold text-slate-800 italic">"${escapeHtml(item.question)}"</p>
+                        </div>
+                    </div>
+
+                    <!-- Card Footer -->
+                    <div class="pt-2 border-t border-black/10 flex items-center justify-between">
+                        <span class="text-xs font-bold opacity-80 flex items-center gap-1">
+                            <i class="fa-solid fa-user-pen text-[10px]"></i> ${escapeHtml(item.name)}
+                        </span>
+                        
+                        <div class="flex items-center gap-2">
+                            <button onclick="likeNote(${item.id})" class="px-2 py-1 bg-white/80 hover:bg-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-2xs transition active:scale-95">
+                                <i class="fa-solid fa-heart text-rose-500"></i>
+                                <span>${item.likes || 0}</span>
+                            </button>
+                            <button onclick="deleteNote(${item.id})" title="Жою" class="w-6 h-6 hover:bg-black/10 rounded-lg flex items-center justify-center text-black/50 hover:text-rose-600 transition">
+                                <i class="fa-solid fa-xmark text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        function updateAnalytics() {
+            document.getElementById('statTotalCount').innerText = feedbackList.length;
+            document.getElementById('statQuestionCount').innerText = feedbackList.length;
+            
+            const authors = new Set(feedbackList.map(item => item.name));
+            document.getElementById('statAuthorsCount').innerText = authors.size;
+
+            // Render tools list
+            const toolsMap = {};
+            feedbackList.forEach(item => {
+                item.tools.forEach(tool => {
+                    const cleanTool = tool.trim();
+                    if (cleanTool) {
+                        toolsMap[cleanTool] = (toolsMap[cleanTool] || 0) + 1;
+                    }
+                });
+            });
+
+            const sortedTools = Object.entries(toolsMap).sort((a,b) => b[1] - a[1]);
+            const toolsContainer = document.getElementById('analyticsToolsList');
+            toolsContainer.innerHTML = '';
+
+            if (sortedTools.length === 0) {
+                toolsContainer.innerHTML = `<p class="text-xs text-slate-400">Мәліметтер жоқ</p>`;
+            } else {
+                sortedTools.slice(0, 5).forEach(([toolName, count]) => {
+                    const percentage = Math.min(100, Math.round((count / feedbackList.length) * 100));
+                    toolsContainer.innerHTML += `
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold text-slate-700 mb-1">
+                                <span>${escapeHtml(toolName)}</span>
+                                <span class="text-emerald-600 font-bold">${count} рет</span>
+                            </div>
+                            <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="h-full bg-emerald-500 rounded-full" style="width: ${percentage}%"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // Render questions list
+            const questionsContainer = document.getElementById('analyticsQuestionsList');
+            questionsContainer.innerHTML = '';
+
+            if (feedbackList.length === 0) {
+                questionsContainer.innerHTML = `<p class="text-xs text-slate-400">Сұрақтар жоқ</p>`;
+            } else {
+                feedbackList.forEach(item => {
+                    questionsContainer.innerHTML += `
+                        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                            <p class="text-xs font-bold text-slate-800">"${escapeHtml(item.question)}"</p>
+                            <div class="flex items-center justify-between text-[10px] text-slate-500">
+                                <span>— ${escapeHtml(item.name)} (${item.category})</span>
+                                <span class="text-rose-500 font-bold"><i class="fa-solid fa-heart"></i> ${item.likes || 0}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        // Like sticky note
+        function likeNote(id) {
+            const note = feedbackList.find(item => item.id === id);
+            if (note) {
+                note.likes = (note.likes || 0) + 1;
+                saveData();
+                renderBoard();
+            }
+        }
+
+        // Delete single sticky note
+        function deleteNote(id) {
+            feedbackList = feedbackList.filter(item => item.id !== id);
+            saveData();
+            renderBoard();
+        }
+
+        // Clear all board data
+        function clearAllData() {
+            if (confirm('Тақтадағы барлық стикерлерді жойғыңыз келе ме?')) {
+                feedbackList = [];
+                saveData();
+                renderBoard();
+            }
+        }
+
+        // Load Sample Data
+        function loadSampleData() {
+            feedbackList = JSON.parse(JSON.stringify(TEMPLATES));
+            saveData();
+            renderBoard();
+        }
+
+        // Template fill button
+        function fillFormWithExample() {
+            const randomTpl = TEMPLATES[Math.floor(Math.random() * TEMPLATES.length)];
+            document.getElementById('authorName').value = randomTpl.name;
+            document.getElementById('category').value = randomTpl.category;
+            document.getElementById('learned1').value = randomTpl.learned[0];
+            document.getElementById('learned2').value = randomTpl.learned[1];
+            document.getElementById('learned3').value = randomTpl.learned[2];
+            document.getElementById('tool1').value = randomTpl.tools[0];
+            document.getElementById('tool2').value = randomTpl.tools[1];
+            document.getElementById('question').value = randomTpl.question;
+        }
+
+        // Modals management
+        function openTemplateModal() {
+            document.getElementById('templateModal').classList.remove('hidden');
+        }
+        function closeTemplateModal() {
+            document.getElementById('templateModal').classList.add('hidden');
+        }
+        function useTemplate(index) {
+            const tpl = TEMPLATES[index];
+            document.getElementById('authorName').value = tpl.name;
+            document.getElementById('category').value = tpl.category;
+            document.getElementById('learned1').value = tpl.learned[0];
+            document.getElementById('learned2').value = tpl.learned[1];
+            document.getElementById('learned3').value = tpl.learned[2];
+            document.getElementById('tool1').value = tpl.tools[0];
+            document.getElementById('tool2').value = tpl.tools[1];
+            document.getElementById('question').value = tpl.question;
+
+            closeTemplateModal();
+            switchTab('form');
+        }
+
+        function openQRModal() {
+            document.getElementById('qrModal').classList.remove('hidden');
+        }
+        function closeQRModal() {
+            document.getElementById('qrModal').classList.add('hidden');
+        }
+
+        function initQRCode() {
+            const qrContainer = document.getElementById("qrcode");
+            qrContainer.innerHTML = "";
+            new QRCode(qrContainer, {
+                text: window.location.href,
+                width: 160,
+                height: 160,
+                colorDark: "#0369a1",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+
+        function copyCurrentURL() {
+            const tempInput = document.createElement("input");
+            tempInput.value = window.location.href;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+            alert("Сілтеме көшірілді!");
+        }
+
+        // Export data to JSON file
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(feedbackList, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `321_keri_bailanys_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        // Helper to escape HTML characters safely
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
